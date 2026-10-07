@@ -1,0 +1,42 @@
+name: Analisis estatico - WebGoat
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sonar:
+    name: Compilar y analizar Java
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Habilitar Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Compilar y analizar con SonarQube Cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw -B clean test-compile \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
+            -Dsonar.organization="${{ vars.SONAR_ORGANIZATION }}" \
+            -Dsonar.projectKey="${{ vars.SONAR_PROJECT_KEY }}" \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.java.jdkHome="$JAVA_HOME"
